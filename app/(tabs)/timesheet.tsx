@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect, useFocusEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors } from "@/styles/commonStyles";
 import AsyncStorage from '@react-native-async-storage/async-storage';
