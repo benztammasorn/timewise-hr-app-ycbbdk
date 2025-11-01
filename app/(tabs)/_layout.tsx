@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
 import { Stack } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
+import { colors } from '@/styles/commonStyles';
 
 export default function TabLayout() {
   // Define the tabs configuration
@@ -10,8 +11,14 @@ export default function TabLayout() {
     {
       name: '(home)',
       route: '/(tabs)/(home)/',
-      icon: 'house.fill',
-      label: 'Home',
+      icon: 'clock.fill',
+      label: 'Clock',
+    },
+    {
+      name: 'timesheet',
+      route: '/(tabs)/timesheet',
+      icon: 'calendar',
+      label: 'Timesheet',
     },
     {
       name: 'profile',
@@ -26,8 +33,12 @@ export default function TabLayout() {
     return (
       <NativeTabs>
         <NativeTabs.Trigger name="(home)">
-          <Icon sf="house.fill" drawable="ic_home" />
-          <Label>Home</Label>
+          <Icon sf="clock.fill" drawable="ic_clock" />
+          <Label>Clock</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="timesheet">
+          <Icon sf="calendar" drawable="ic_calendar" />
+          <Label>Timesheet</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="profile">
           <Icon sf="person.fill" drawable="ic_profile" />
@@ -47,6 +58,7 @@ export default function TabLayout() {
         }}
       >
         <Stack.Screen name="(home)" />
+        <Stack.Screen name="timesheet" />
         <Stack.Screen name="profile" />
       </Stack>
       <FloatingTabBar tabs={tabs} />

@@ -2,14 +2,11 @@ import React from "react";
 import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
+import { colors } from "@/styles/commonStyles";
 
 export default function ProfileScreen() {
-  const theme = useTheme();
-
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={[
@@ -17,28 +14,52 @@ export default function ProfileScreen() {
           Platform.OS !== 'ios' && styles.contentContainerWithTabBar
         ]}
       >
-        <GlassView style={[
-          styles.profileHeader,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <IconSymbol name="person.circle.fill" size={80} color={theme.colors.primary} />
-          <Text style={[styles.name, { color: theme.colors.text }]}>John Doe</Text>
-          <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>john.doe@example.com</Text>
-        </GlassView>
+        <View style={[styles.profileHeader, { backgroundColor: colors.card }]}>
+          <IconSymbol name="person.circle.fill" size={80} color={colors.primary} />
+          <Text style={[styles.name, { color: colors.text }]}>John Doe</Text>
+          <Text style={[styles.email, { color: colors.textSecondary }]}>john.doe@example.com</Text>
+        </View>
 
-        <GlassView style={[
-          styles.section,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact Information</Text>
           <View style={styles.infoRow}>
-            <IconSymbol name="phone.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>+1 (555) 123-4567</Text>
+            <IconSymbol name="phone.fill" size={20} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.text }]}>+1 (555) 123-4567</Text>
           </View>
           <View style={styles.infoRow}>
-            <IconSymbol name="location.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>San Francisco, CA</Text>
+            <IconSymbol name="envelope.fill" size={20} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.text }]}>john.doe@company.com</Text>
           </View>
-        </GlassView>
+          <View style={styles.infoRow}>
+            <IconSymbol name="location.fill" size={20} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.text }]}>San Francisco, CA</Text>
+          </View>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Employment Details</Text>
+          <View style={styles.infoRow}>
+            <IconSymbol name="briefcase.fill" size={20} color={colors.primary} />
+            <View style={styles.infoColumn}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Position</Text>
+              <Text style={[styles.infoText, { color: colors.text }]}>Software Engineer</Text>
+            </View>
+          </View>
+          <View style={styles.infoRow}>
+            <IconSymbol name="building.2.fill" size={20} color={colors.primary} />
+            <View style={styles.infoColumn}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Department</Text>
+              <Text style={[styles.infoText, { color: colors.text }]}>Engineering</Text>
+            </View>
+          </View>
+          <View style={styles.infoRow}>
+            <IconSymbol name="calendar.fill" size={20} color={colors.primary} />
+            <View style={styles.infoColumn}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Employee ID</Text>
+              <Text style={[styles.infoText, { color: colors.text }]}>EMP-2024-001</Text>
+            </View>
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -47,16 +68,16 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    // backgroundColor handled dynamically
   },
   container: {
     flex: 1,
   },
   contentContainer: {
     padding: 20,
+    paddingBottom: 40,
   },
   contentContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
+    paddingBottom: 120,
   },
   profileHeader: {
     alignItems: 'center',
@@ -64,28 +85,43 @@ const styles = StyleSheet.create({
     padding: 32,
     marginBottom: 16,
     gap: 12,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
   },
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    // color handled dynamically
   },
   email: {
     fontSize: 16,
-    // color handled dynamically
   },
   section: {
     borderRadius: 12,
     padding: 20,
-    gap: 12,
+    gap: 16,
+    marginBottom: 16,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    paddingVertical: 8,
+  },
+  infoColumn: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 12,
+    marginBottom: 2,
   },
   infoText: {
     fontSize: 16,
-    // color handled dynamically
   },
 });

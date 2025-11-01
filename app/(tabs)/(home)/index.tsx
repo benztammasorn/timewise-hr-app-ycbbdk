@@ -1,161 +1,343 @@
-import React from "react";
-import { Stack, Link } from "expo-router";
-import { FlatList, Pressable, StyleSheet, View, Text, Alert, Platform } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Stack } from "expo-router";
+import { ScrollView, Pressable, StyleSheet, View, Text, Platform, Alert } from "react-native";
 import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { colors } from "@/styles/commonStyles";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const ICON_COLOR = "#007AFF";
+interface ClockRecord {
+  date: string;
+  clockInTime: string | null;
+  clockOutTime: string | null;
+}
 
 export default function HomeScreen() {
-  const theme = useTheme();
-  const modalDemos = [
-    {
-      title: "Standard Modal",
-      description: "Full screen modal presentation",
-      route: "/modal",
-      color: "#007AFF",
-    },
-    {
-      title: "Form Sheet",
-      description: "Bottom sheet with detents and grabber",
-      route: "/formsheet",
-      color: "#34C759",
-    },
-    {
-      title: "Transparent Modal",
-      description: "Overlay without obscuring background",
-      route: "/transparent-modal",
-      color: "#FF9500",
+  const [isClockedIn, setIsClockedIn] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [clockInTime, setClockInTime] = useState<string | null>(null);
+  const [todayRecord, setTodayRecord] = useState<ClockRecord | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    loadTodayRecord();
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const loadTodayRecord = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const records = await AsyncStorage.getItem('clockRecords');
+      if (records) {
+        const parsedRecords: ClockRecord[] = JSON.parse(records);
+        const record = parsedRecords.find(r => r.date === today);
+        if (record) {
+          setTodayRecord(record);
+          setIsClockedIn(record.clockInTime !== null && record.clockOutTime === null);
+          setClockInTime(record.clockInTime);
+        }
+      }
+    } catch (error) {
+      console.log('Error loading clock records:', error);
     }
-  ];
+  };
 
-  const renderModalDemo = ({ item }: { item: (typeof modalDemos)[0] }) => (
-    <GlassView style={[
-      styles.demoCard,
-      Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-    ]} glassEffectStyle="regular">
-      <View style={[styles.demoIcon, { backgroundColor: item.color }]}>
-        <IconSymbol name="square.grid.3x3" color="white" size={24} />
-      </View>
-      <View style={styles.demoContent}>
-        <Text style={[styles.demoTitle, { color: theme.colors.text }]}>{item.title}</Text>
-        <Text style={[styles.demoDescription, { color: theme.dark ? '#98989D' : '#666' }]}>{item.description}</Text>
-      </View>
-      <Link href={item.route as any} asChild>
-        <Pressable>
-          <GlassView style={[
-            styles.tryButton,
-            Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)' }
-          ]} glassEffectStyle="clear">
-            <Text style={[styles.tryButtonText, { color: theme.colors.primary }]}>Try It</Text>
-          </GlassView>
-        </Pressable>
-      </Link>
-    </GlassView>
-  );
+  const handleClockIn = async () => {
+    try {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true 
+      });
+      
+      const today = now.toISOString().split('T')[0];
+      const records = await AsyncStorage.getItem('clockRecords');
+      let allRecords: ClockRecord[] = records ? JSON.parse(records) : [];
+      
+      const existingIndex = allRecords.findIndex(r => r.date === today);
+      if (existingIndex >= 0) {
+        allRecords[existingIndex].clockInTime = timeString;
+      } else {
+        allRecords.push({
+          date: today,
+          clockInTime: timeString,
+          clockOutTime: null,
+        });
+      }
+      
+      await AsyncStorage.setItem('clockRecords', JSON.stringify(allRecords));
+      setIsClockedIn(true);
+      setClockInTime(timeString);
+      setTodayRecord(allRecords[existingIndex >= 0 ? existingIndex : allRecords.length - 1]);
+      
+      Alert.alert('Success', `Clocked in at ${timeString}`);
+    } catch (error) {
+      console.log('Error clocking in:', error);
+      Alert.alert('Error', 'Failed to clock in');
+    }
+  };
 
-  const renderHeaderRight = () => (
-    <Pressable
-      onPress={() => Alert.alert("Not Implemented", "This feature is not implemented yet")}
-      style={styles.headerButtonContainer}
-    >
-      <IconSymbol name="plus" color={theme.colors.primary} />
-    </Pressable>
-  );
+  const handleClockOut = async () => {
+    try {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true 
+      });
+      
+      const today = now.toISOString().split('T')[0];
+      const records = await AsyncStorage.getItem('clockRecords');
+      let allRecords: ClockRecord[] = records ? JSON.parse(records) : [];
+      
+      const existingIndex = allRecords.findIndex(r => r.date === today);
+      if (existingIndex >= 0) {
+        allRecords[existingIndex].clockOutTime = timeString;
+      }
+      
+      await AsyncStorage.setItem('clockRecords', JSON.stringify(allRecords));
+      setIsClockedIn(false);
+      setTodayRecord(allRecords[existingIndex]);
+      
+      Alert.alert('Success', `Clocked out at ${timeString}`);
+    } catch (error) {
+      console.log('Error clocking out:', error);
+      Alert.alert('Error', 'Failed to clock out');
+    }
+  };
 
-  const renderHeaderLeft = () => (
-    <Pressable
-      onPress={() => Alert.alert("Not Implemented", "This feature is not implemented yet")}
-      style={styles.headerButtonContainer}
-    >
-      <IconSymbol
-        name="gear"
-        color={theme.colors.primary}
-      />
-    </Pressable>
-  );
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true 
+    });
+  };
 
   return (
     <>
       {Platform.OS === 'ios' && (
         <Stack.Screen
           options={{
-            title: "Building the app...",
-            headerRight: renderHeaderRight,
-            headerLeft: renderHeaderLeft,
+            title: "Clock In/Out",
           }}
         />
       )}
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <FlatList
-          data={modalDemos}
-          renderItem={renderModalDemo}
-          keyExtractor={(item) => item.route}
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
+        <ScrollView 
+          style={styles.container}
           contentContainerStyle={[
-            styles.listContainer,
-            Platform.OS !== 'ios' && styles.listContainerWithTabBar
+            styles.contentContainer,
+            Platform.OS !== 'ios' && styles.contentContainerWithTabBar
           ]}
-          contentInsetAdjustmentBehavior="automatic"
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
+        >
+          <View style={styles.headerSection}>
+            <Text style={styles.dateText}>{formatDate(currentTime)}</Text>
+            <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+          </View>
+
+          <View style={[styles.statusCard, { backgroundColor: colors.card }]}>
+            <View style={styles.statusIndicator}>
+              <View style={[
+                styles.statusDot,
+                { backgroundColor: isClockedIn ? colors.accent : colors.secondary }
+              ]} />
+              <Text style={[
+                styles.statusText,
+                { color: isClockedIn ? colors.accent : colors.secondary }
+              ]}>
+                {isClockedIn ? 'Clocked In' : 'Clocked Out'}
+              </Text>
+            </View>
+            
+            {clockInTime && (
+              <Text style={styles.clockTimeText}>
+                Clocked in at: {clockInTime}
+              </Text>
+            )}
+            
+            {todayRecord?.clockOutTime && (
+              <Text style={styles.clockTimeText}>
+                Clocked out at: {todayRecord.clockOutTime}
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <Pressable
+              style={[
+                styles.clockButton,
+                { 
+                  backgroundColor: isClockedIn ? colors.secondary : colors.primary,
+                  opacity: isClockedIn ? 0.6 : 1
+                }
+              ]}
+              onPress={handleClockIn}
+              disabled={isClockedIn}
+            >
+              <IconSymbol 
+                name="arrow.right.circle.fill" 
+                size={32} 
+                color="#FFFFFF" 
+              />
+              <Text style={styles.buttonText}>Clock In</Text>
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.clockButton,
+                { 
+                  backgroundColor: isClockedIn ? colors.accent : colors.secondary,
+                  opacity: !isClockedIn ? 0.6 : 1
+                }
+              ]}
+              onPress={handleClockOut}
+              disabled={!isClockedIn}
+            >
+              <IconSymbol 
+                name="arrow.left.circle.fill" 
+                size={32} 
+                color="#FFFFFF" 
+              />
+              <Text style={styles.buttonText}>Clock Out</Text>
+            </Pressable>
+          </View>
+
+          <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+            <Text style={styles.infoTitle}>Today's Summary</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Clock In:</Text>
+              <Text style={styles.infoValue}>{todayRecord?.clockInTime || 'Not clocked in'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Clock Out:</Text>
+              <Text style={styles.infoValue}>{todayRecord?.clockOutTime || 'Not clocked out'}</Text>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    // backgroundColor handled dynamically
   },
-  listContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+  contentContainer: {
+    padding: 20,
+    paddingBottom: 40,
   },
-  listContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
+  contentContainerWithTabBar: {
+    paddingBottom: 120,
   },
-  demoCard: {
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  dateText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+  timeText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+  statusCard: {
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    padding: 20,
+    marginBottom: 32,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  statusIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
   },
-  demoIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
   },
-  demoContent: {
-    flex: 1,
-  },
-  demoTitle: {
+  statusText: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 4,
-    // color handled dynamically
   },
-  demoDescription: {
+  clockTimeText: {
     fontSize: 14,
-    lineHeight: 18,
-    // color handled dynamically
+    color: colors.textSecondary,
+    marginTop: 8,
   },
-  headerButtonContainer: {
-    padding: 6,
+  buttonContainer: {
+    gap: 16,
+    marginBottom: 32,
   },
-  tryButton: {
-    paddingHorizontal: 16,
+  clockButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    borderRadius: 12,
+    gap: 12,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+    elevation: 5,
+  },
+  buttonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  infoCard: {
+    borderRadius: 12,
+    padding: 20,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 8,
-    borderRadius: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
-  tryButtonText: {
+  infoLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  infoValue: {
     fontSize: 14,
     fontWeight: '600',
-    // color handled dynamically
+    color: colors.text,
   },
 });
