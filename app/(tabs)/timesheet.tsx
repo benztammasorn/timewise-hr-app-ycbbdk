@@ -7,10 +7,18 @@ import { colors } from "@/styles/commonStyles";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback } from "react";
 
+interface LocationData {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+}
+
 interface ClockRecord {
   date: string;
   clockInTime: string | null;
   clockOutTime: string | null;
+  clockInLocation?: LocationData | null;
+  clockOutLocation?: LocationData | null;
 }
 
 export default function TimesheetScreen() {
@@ -144,7 +152,14 @@ export default function TimesheetScreen() {
                     <IconSymbol name="arrow.right.circle.fill" size={16} color={colors.primary} />
                     <Text style={styles.timeLabelText}>In</Text>
                   </View>
-                  <Text style={styles.timeValue}>{record.clockInTime || '-'}</Text>
+                  <View style={styles.timeValueContainer}>
+                    <Text style={styles.timeValue}>{record.clockInTime || '-'}</Text>
+                    {record.clockInLocation && (
+                      <Text style={styles.locationValue}>
+                        📍 {record.clockInLocation.latitude.toFixed(4)}, {record.clockInLocation.longitude.toFixed(4)}
+                      </Text>
+                    )}
+                  </View>
                 </View>
 
                 <View style={styles.timeRow}>
@@ -152,7 +167,14 @@ export default function TimesheetScreen() {
                     <IconSymbol name="arrow.left.circle.fill" size={16} color={colors.accent} />
                     <Text style={styles.timeLabelText}>Out</Text>
                   </View>
-                  <Text style={styles.timeValue}>{record.clockOutTime || '-'}</Text>
+                  <View style={styles.timeValueContainer}>
+                    <Text style={styles.timeValue}>{record.clockOutTime || '-'}</Text>
+                    {record.clockOutLocation && (
+                      <Text style={styles.locationValue}>
+                        📍 {record.clockOutLocation.latitude.toFixed(4)}, {record.clockOutLocation.longitude.toFixed(4)}
+                      </Text>
+                    )}
+                  </View>
                 </View>
 
                 <View style={[styles.timeRow, styles.hoursRow]}>
@@ -255,8 +277,11 @@ const styles = StyleSheet.create({
   timeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 6,
+  },
+  timeValueContainer: {
+    alignItems: 'flex-end',
   },
   hoursRow: {
     paddingTop: 12,
@@ -277,6 +302,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
+  },
+  locationValue: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
+    fontFamily: 'monospace',
   },
   hoursValue: {
     color: colors.primary,
