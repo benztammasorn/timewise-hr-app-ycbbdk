@@ -21,6 +21,18 @@ export default function TabLayout() {
       label: 'Timesheet',
     },
     {
+      name: 'leave',
+      route: '/(tabs)/leave',
+      icon: 'calendar.badge.plus',
+      label: 'Leave',
+    },
+    {
+      name: 'quota',
+      route: '/(tabs)/quota',
+      icon: 'chart.pie.fill',
+      label: 'Quota',
+    },
+    {
       name: 'profile',
       route: '/(tabs)/profile',
       icon: 'person.fill',
@@ -39,6 +51,14 @@ export default function TabLayout() {
         <NativeTabs.Trigger name="timesheet">
           <Icon sf="calendar" drawable="ic_calendar" />
           <Label>Timesheet</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="leave">
+          <Icon sf="calendar.badge.plus" drawable="ic_leave" />
+          <Label>Leave</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="quota">
+          <Icon sf="chart.pie.fill" drawable="ic_quota" />
+          <Label>Quota</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="profile">
           <Icon sf="person.fill" drawable="ic_profile" />
@@ -59,6 +79,8 @@ export default function TabLayout() {
       >
         <Stack.Screen name="(home)" />
         <Stack.Screen name="timesheet" />
+        <Stack.Screen name="leave" />
+        <Stack.Screen name="quota" />
         <Stack.Screen name="profile" />
       </Stack>
       <FloatingTabBar tabs={tabs} />

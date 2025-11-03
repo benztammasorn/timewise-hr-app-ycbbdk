@@ -21,6 +21,12 @@ interface ClockRecord {
   clockOutLocation?: LocationData | null;
 }
 
+interface TimeEntry {
+  date: string;
+  time: string;
+  type: 'in' | 'out';
+}
+
 export default function HomeScreen() {
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());

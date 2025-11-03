@@ -9,6 +9,13 @@ export const colors = {
   accent: '#28A745',
   card: '#FFFFFF',
   highlight: '#FFC107',
+  success: '#28A745',
+  warning: '#FFC107',
+  danger: '#DC3545',
+  info: '#17A2B8',
+  pending: '#FFC107',
+  approved: '#28A745',
+  rejected: '#DC3545',
 };
 
 export const buttonStyles = StyleSheet.create({
