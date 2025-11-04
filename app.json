@@ -42,6 +42,9 @@
     },
     "extra": {
       "router": {}
-    }
+    },
+    "deepLinks": [
+      "natively://line-callback"
+    ]
   }
 }

@@ -1,0 +1,17 @@
+
+LINE LOGIN CALLBACK URL
+=======================
+
+Your Line login callback URL is:
+natively://line-callback
+
+This URL should be configured in your Line Developer Console:
+1. Go to https://developers.line.biz/
+2. Select your channel (Channel ID: 2008377867)
+3. Navigate to OAuth Settings or Basic Settings
+4. Add the callback URL: natively://line-callback
+5. Save the changes
+
+The app will automatically handle callbacks to this URL and process the Line login response.
+
+For more information, see LINE_LOGIN_SETUP.md

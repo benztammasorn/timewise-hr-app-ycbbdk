@@ -1,5 +1,6 @@
+
 import "react-native-reanimated";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useFonts } from "expo-font";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -16,12 +17,14 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Button } from "@/components/button";
 import { WidgetProvider } from "@/contexts/WidgetContext";
+import { getLineUserInfo } from "@/services/lineAuth";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
-  initialRouteName: "(tabs)",
+  initialRouteName: "login",
 };
 
 export default function RootLayout() {
@@ -30,12 +33,28 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (loaded) {
+    checkLoginStatus();
+  }, []);
+
+  const checkLoginStatus = async () => {
+    try {
+      const userInfo = await getLineUserInfo();
+      setIsLoggedIn(!!userInfo);
+      console.log('Login status checked:', !!userInfo);
+    } catch (error) {
+      console.log('Error checking login status:', error);
+      setIsLoggedIn(false);
+    }
+  };
+
+  useEffect(() => {
+    if (loaded && isLoggedIn !== null) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, isLoggedIn]);
 
   React.useEffect(() => {
     if (
@@ -49,7 +68,7 @@ export default function RootLayout() {
     }
   }, [networkState.isConnected, networkState.isInternetReachable]);
 
-  if (!loaded) {
+  if (!loaded || isLoggedIn === null) {
     return null;
   }
 
@@ -77,48 +96,64 @@ export default function RootLayout() {
       notification: "rgb(255, 69, 58)", // System Red (Dark Mode)
     },
   };
+
   return (
     <>
       <StatusBar style="auto" animated />
-        <ThemeProvider
-          value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
-        >
-          <WidgetProvider>
-            <GestureHandlerRootView>
+      <ThemeProvider
+        value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
+      >
+        <WidgetProvider>
+          <GestureHandlerRootView>
             <Stack>
-              {/* Main app with tabs */}
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-
-              {/* Modal Demo Screens */}
-              <Stack.Screen
-                name="modal"
-                options={{
-                  presentation: "modal",
-                  title: "Standard Modal",
-                }}
-              />
-              <Stack.Screen
-                name="formsheet"
-                options={{
-                  presentation: "formSheet",
-                  title: "Form Sheet Modal",
-                  sheetGrabberVisible: true,
-                  sheetAllowedDetents: [0.5, 0.8, 1.0],
-                  sheetCornerRadius: 20,
-                }}
-              />
-              <Stack.Screen
-                name="transparent-modal"
-                options={{
-                  presentation: "transparentModal",
-                  headerShown: false,
-                }}
-              />
+              {isLoggedIn ? (
+                <>
+                  {/* Main app with tabs - only shown when logged in */}
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  
+                  {/* Modal Demo Screens */}
+                  <Stack.Screen
+                    name="modal"
+                    options={{
+                      presentation: "modal",
+                      title: "Standard Modal",
+                    }}
+                  />
+                  <Stack.Screen
+                    name="formsheet"
+                    options={{
+                      presentation: "formSheet",
+                      title: "Form Sheet Modal",
+                      sheetGrabberVisible: true,
+                      sheetAllowedDetents: [0.5, 0.8, 1.0],
+                      sheetCornerRadius: 20,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="transparent-modal"
+                    options={{
+                      presentation: "transparentModal",
+                      headerShown: false,
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  {/* Login screen - only shown when not logged in */}
+                  <Stack.Screen 
+                    name="login" 
+                    options={{ 
+                      headerShown: false,
+                      animationEnabled: false,
+                    }} 
+                  />
+                </>
+              )}
             </Stack>
             <SystemBars style={"auto"} />
-            </GestureHandlerRootView>
-          </WidgetProvider>
-        </ThemeProvider>
+          </GestureHandlerRootView>
+        </WidgetProvider>
+      </ThemeProvider>
     </>
   );
 }

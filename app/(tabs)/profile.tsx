@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Platform, Pressable, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors } from "@/styles/commonStyles";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logout } from "@/services/lineAuth";
+import { router } from "expo-router";
 
 interface User {
   id: string;
@@ -77,6 +80,7 @@ const mockUsers: User[] = [
 
 export default function ProfileScreen() {
   const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     loadCurrentUser();
@@ -94,6 +98,37 @@ export default function ProfileScreen() {
     } catch (error) {
       console.log('Error loading current user:', error);
     }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          onPress: () => console.log('Logout cancelled'),
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          onPress: async () => {
+            try {
+              setIsLoggingOut(true);
+              await logout();
+              console.log('User logged out successfully');
+              router.replace('/login');
+            } catch (error) {
+              console.log('Error during logout:', error);
+              Alert.alert('Error', 'Failed to logout');
+            } finally {
+              setIsLoggingOut(false);
+            }
+          },
+          style: 'destructive',
+        },
+      ]
+    );
   };
 
   return (
@@ -151,6 +186,23 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
+
+        <Pressable
+          style={[
+            styles.logoutButton,
+            { backgroundColor: colors.danger },
+            isLoggingOut && styles.buttonDisabled
+          ]}
+          onPress={handleLogout}
+          disabled={isLoggingOut}
+        >
+          <IconSymbol 
+            name="arrow.right.circle.fill"
+            size={20}
+            color="#FFFFFF"
+          />
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -214,6 +266,25 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 16,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 8,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });
 
