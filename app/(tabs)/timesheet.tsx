@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Platform, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { IconSymbol } from "@/components/IconSymbol";
@@ -109,8 +109,8 @@ export default function TimesheetScreen() {
         ]}
       >
         <View style={styles.headerSection}>
-          <Text style={styles.title}>Weekly Timesheet</Text>
-          <Text style={styles.subtitle}>This Week's Clock Records</Text>
+          <Text style={styles.title}>ใบเวลารายสัปดาห์</Text>
+          <Text style={styles.subtitle}>บันทึกการเข้า-ออกของสัปดาห์นี้</Text>
         </View>
 
         <View style={styles.recordsContainer}>
@@ -139,10 +139,10 @@ export default function TimesheetScreen() {
                     }
                   ]}>
                     {record.clockInTime && record.clockOutTime 
-                      ? 'Complete' 
+                      ? 'เสร็จสิ้น' 
                       : record.clockInTime 
-                      ? 'In Progress' 
-                      : 'No Record'}
+                      ? 'กำลังดำเนิน' 
+                      : 'ไม่มีบันทึก'}
                   </Text>
                 </View>
               </View>
@@ -151,7 +151,7 @@ export default function TimesheetScreen() {
                 <View style={styles.timeRow}>
                   <View style={styles.timeLabel}>
                     <IconSymbol name="arrow.right.circle.fill" size={16} color={colors.primary} />
-                    <Text style={styles.timeLabelText}>In</Text>
+                    <Text style={styles.timeLabelText}>เข้า</Text>
                   </View>
                   <View style={styles.timeValueContainer}>
                     <Text style={styles.timeValue}>{record.clockInTime || '-'}</Text>
@@ -166,7 +166,7 @@ export default function TimesheetScreen() {
                 <View style={styles.timeRow}>
                   <View style={styles.timeLabel}>
                     <IconSymbol name="arrow.left.circle.fill" size={16} color={colors.accent} />
-                    <Text style={styles.timeLabelText}>Out</Text>
+                    <Text style={styles.timeLabelText}>ออก</Text>
                   </View>
                   <View style={styles.timeValueContainer}>
                     <Text style={styles.timeValue}>{record.clockOutTime || '-'}</Text>
@@ -181,7 +181,7 @@ export default function TimesheetScreen() {
                 <View style={[styles.timeRow, styles.hoursRow]}>
                   <View style={styles.timeLabel}>
                     <IconSymbol name="clock.fill" size={16} color={colors.secondary} />
-                    <Text style={styles.timeLabelText}>Hours</Text>
+                    <Text style={styles.timeLabelText}>ชั่วโมง</Text>
                   </View>
                   <Text style={[styles.timeValue, styles.hoursValue]}>
                     {calculateHours(record.clockInTime, record.clockOutTime)}
@@ -193,15 +193,15 @@ export default function TimesheetScreen() {
         </View>
 
         <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
-          <Text style={styles.summaryTitle}>Weekly Summary</Text>
+          <Text style={styles.summaryTitle}>สรุปรายสัปดาห์</Text>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total Days Worked:</Text>
+            <Text style={styles.summaryLabel}>จำนวนวันที่ทำงาน:</Text>
             <Text style={styles.summaryValue}>
               {weekRecords.filter(r => r.clockInTime && r.clockOutTime).length}
             </Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Days with Records:</Text>
+            <Text style={styles.summaryLabel}>วันที่มีบันทึก:</Text>
             <Text style={styles.summaryValue}>
               {weekRecords.filter(r => r.clockInTime).length}
             </Text>
@@ -346,3 +346,4 @@ const styles = StyleSheet.create({
 });
 
 export { ClockRecord };
+

@@ -102,16 +102,16 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      'ออกจากระบบ',
+      'คุณแน่ใจหรือว่าต้องการออกจากระบบ?',
       [
         {
-          text: 'Cancel',
+          text: 'ยกเลิก',
           onPress: () => console.log('Logout cancelled'),
           style: 'cancel',
         },
         {
-          text: 'Logout',
+          text: 'ออกจากระบบ',
           onPress: async () => {
             try {
               setIsLoggingOut(true);
@@ -120,7 +120,7 @@ export default function ProfileScreen() {
               router.replace('/login');
             } catch (error) {
               console.log('Error during logout:', error);
-              Alert.alert('Error', 'Failed to logout');
+              Alert.alert('ข้อผิดพลาด', 'ไม่สามารถออกจากระบบได้');
             } finally {
               setIsLoggingOut(false);
             }
@@ -147,7 +147,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact Information</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>ข้อมูลติดต่อ</Text>
           <View style={styles.infoRow}>
             <IconSymbol name="phone.fill" size={20} color={colors.primary} />
             <Text style={[styles.infoText, { color: colors.text }]}>{currentUser.phone}</Text>
@@ -163,25 +163,25 @@ export default function ProfileScreen() {
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Employment Details</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>รายละเอียดการจ้างงาน</Text>
           <View style={styles.infoRow}>
             <IconSymbol name="briefcase.fill" size={20} color={colors.primary} />
             <View style={styles.infoColumn}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Position</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>ตำแหน่ง</Text>
               <Text style={[styles.infoText, { color: colors.text }]}>{currentUser.position}</Text>
             </View>
           </View>
           <View style={styles.infoRow}>
             <IconSymbol name="building.2.fill" size={20} color={colors.primary} />
             <View style={styles.infoColumn}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Department</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>แผนก</Text>
               <Text style={[styles.infoText, { color: colors.text }]}>{currentUser.department}</Text>
             </View>
           </View>
           <View style={styles.infoRow}>
             <IconSymbol name="calendar.fill" size={20} color={colors.primary} />
             <View style={styles.infoColumn}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Employee ID</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>รหัสพนักงาน</Text>
               <Text style={[styles.infoText, { color: colors.text }]}>{currentUser.employeeId}</Text>
             </View>
           </View>
@@ -201,7 +201,7 @@ export default function ProfileScreen() {
             size={20}
             color="#FFFFFF"
           />
-          <Text style={styles.logoutButtonText}>Logout</Text>
+          <Text style={styles.logoutButtonText}>ออกจากระบบ</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -290,15 +290,16 @@ const styles = StyleSheet.create({
 
 export { mockUsers };
 
+
 // Mock data for leave requests and quotas
 export const mockLeaveRequests: LeaveRequest[] = [
   {
     id: '1',
     userId: '1',
-    leaveType: 'Vacation',
+    leaveType: 'ลาพักร้อน',
     fromDate: '2024-01-15',
     toDate: '2024-01-19',
-    reason: 'Family vacation',
+    reason: 'ลาพักร้อนกับครอบครัว',
     status: 'approved',
     createdAt: '2024-01-10',
     daysRequested: 5,
@@ -306,10 +307,10 @@ export const mockLeaveRequests: LeaveRequest[] = [
   {
     id: '2',
     userId: '1',
-    leaveType: 'Sick Leave',
+    leaveType: 'ลาป่วย',
     fromDate: '2024-01-22',
     toDate: '2024-01-22',
-    reason: 'Medical appointment',
+    reason: 'นัดหมายแพทย์',
     status: 'pending',
     createdAt: '2024-01-20',
     daysRequested: 1,
@@ -317,10 +318,10 @@ export const mockLeaveRequests: LeaveRequest[] = [
   {
     id: '3',
     userId: '1',
-    leaveType: 'Personal',
+    leaveType: 'ลาส่วนตัว',
     fromDate: '2024-01-25',
     toDate: '2024-01-25',
-    reason: 'Personal matters',
+    reason: 'เรื่องส่วนตัว',
     status: 'rejected',
     createdAt: '2024-01-23',
     daysRequested: 1,
@@ -334,9 +335,9 @@ export const mockLeaveQuotas: LeaveQuota[] = [
     used: 7,
     remaining: 13,
     byType: {
-      'Vacation': { total: 15, used: 5, remaining: 10 },
-      'Sick Leave': { total: 3, used: 1, remaining: 2 },
-      'Personal': { total: 2, used: 1, remaining: 1 },
+      'ลาพักร้อน': { total: 15, used: 5, remaining: 10 },
+      'ลาป่วย': { total: 3, used: 1, remaining: 2 },
+      'ลาส่วนตัว': { total: 2, used: 1, remaining: 1 },
     },
   },
   {
@@ -345,9 +346,9 @@ export const mockLeaveQuotas: LeaveQuota[] = [
     used: 10,
     remaining: 10,
     byType: {
-      'Vacation': { total: 15, used: 10, remaining: 5 },
-      'Sick Leave': { total: 3, used: 0, remaining: 3 },
-      'Personal': { total: 2, used: 0, remaining: 2 },
+      'ลาพักร้อน': { total: 15, used: 10, remaining: 5 },
+      'ลาป่วย': { total: 3, used: 0, remaining: 3 },
+      'ลาส่วนตัว': { total: 2, used: 0, remaining: 2 },
     },
   },
   {
@@ -356,9 +357,9 @@ export const mockLeaveQuotas: LeaveQuota[] = [
     used: 2,
     remaining: 18,
     byType: {
-      'Vacation': { total: 15, used: 0, remaining: 15 },
-      'Sick Leave': { total: 3, used: 2, remaining: 1 },
-      'Personal': { total: 2, used: 0, remaining: 2 },
+      'ลาพักร้อน': { total: 15, used: 0, remaining: 15 },
+      'ลาป่วย': { total: 3, used: 2, remaining: 1 },
+      'ลาส่วนตัว': { total: 2, used: 0, remaining: 2 },
     },
   },
 ];

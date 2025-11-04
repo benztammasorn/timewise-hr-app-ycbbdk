@@ -11,31 +11,31 @@ export default function TabLayout() {
       name: '(home)',
       route: '/(tabs)/(home)/',
       icon: 'clock.fill',
-      label: 'Clock',
+      label: 'นาฬิกา',
     },
     {
       name: 'timesheet',
       route: '/(tabs)/timesheet',
       icon: 'calendar',
-      label: 'Timesheet',
+      label: 'ใบเวลา',
     },
     {
       name: 'leave',
       route: '/(tabs)/leave',
       icon: 'calendar.badge.plus',
-      label: 'Leave',
+      label: 'ลาพักร้อน',
     },
     {
       name: 'quota',
       route: '/(tabs)/quota',
       icon: 'chart.pie.fill',
-      label: 'Quota',
+      label: 'โควต้า',
     },
     {
       name: 'profile',
       route: '/(tabs)/profile',
       icon: 'person.fill',
-      label: 'Profile',
+      label: 'โปรไฟล์',
     },
   ];
 
@@ -44,23 +44,23 @@ export default function TabLayout() {
       <NativeTabs>
         <NativeTabs.Trigger name="(home)">
           <Icon sf="clock.fill" drawable="ic_clock" />
-          <Label>Clock</Label>
+          <Label>นาฬิกา</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="timesheet">
           <Icon sf="calendar" drawable="ic_calendar" />
-          <Label>Timesheet</Label>
+          <Label>ใบเวลา</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="leave">
           <Icon sf="calendar.badge.plus" drawable="ic_leave" />
-          <Label>Leave</Label>
+          <Label>ลาพักร้อน</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="quota">
           <Icon sf="chart.pie.fill" drawable="ic_quota" />
-          <Label>Quota</Label>
+          <Label>โควต้า</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="profile">
           <Icon sf="person.fill" drawable="ic_profile" />
-          <Label>Profile</Label>
+          <Label>โปรไฟล์</Label>
         </NativeTabs.Trigger>
       </NativeTabs>
     );
