@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Stack } from "expo-router";
 import { ScrollView, Pressable, StyleSheet, View, Text, Platform, Alert } from "react-native";
@@ -185,6 +186,14 @@ export default function HomeScreen() {
     }
   };
 
+  const handleToggleClock = async () => {
+    if (isClockedIn) {
+      await handleClockOut();
+    } else {
+      await handleClockIn();
+    }
+  };
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { 
       weekday: 'long', 
@@ -275,38 +284,20 @@ export default function HomeScreen() {
               style={[
                 styles.clockButton,
                 { 
-                  backgroundColor: isClockedIn ? colors.secondary : colors.primary,
-                  opacity: isClockedIn ? 0.6 : 1
+                  backgroundColor: isClockedIn ? colors.accent : colors.primary,
                 }
               ]}
-              onPress={handleClockIn}
-              disabled={isClockedIn || isLoadingLocation}
+              onPress={handleToggleClock}
+              disabled={isLoadingLocation}
             >
               <IconSymbol 
-                name={isLoadingLocation ? "hourglass" : "arrow.right.circle.fill"}
+                name={isLoadingLocation ? "hourglass" : (isClockedIn ? "arrow.left.circle.fill" : "arrow.right.circle.fill")}
                 size={32} 
                 color="#FFFFFF" 
               />
-              <Text style={styles.buttonText}>{isLoadingLocation ? 'Getting Location...' : 'Clock In'}</Text>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.clockButton,
-                { 
-                  backgroundColor: isClockedIn ? colors.accent : colors.secondary,
-                  opacity: !isClockedIn ? 0.6 : 1
-                }
-              ]}
-              onPress={handleClockOut}
-              disabled={!isClockedIn || isLoadingLocation}
-            >
-              <IconSymbol 
-                name={isLoadingLocation ? "hourglass" : "arrow.left.circle.fill"}
-                size={32} 
-                color="#FFFFFF" 
-              />
-              <Text style={styles.buttonText}>{isLoadingLocation ? 'Getting Location...' : 'Clock Out'}</Text>
+              <Text style={styles.buttonText}>
+                {isLoadingLocation ? 'Getting Location...' : (isClockedIn ? 'Clock Out' : 'Clock In')}
+              </Text>
             </Pressable>
           </View>
 
