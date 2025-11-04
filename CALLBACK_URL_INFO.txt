@@ -1,17 +1,91 @@
 
-LINE LOGIN CALLBACK URL
-=======================
+LINE LOGIN CALLBACK URL SETUP GUIDE
+====================================
 
-Your Line login callback URL is:
-natively://line-callback
+PROBLEM:
+Line OAuth does not accept deep links like "natively://line-callback"
+Line requires a valid HTTP/HTTPS URL for the callback.
 
-This URL should be configured in your Line Developer Console:
+SOLUTION:
+You need to set up a web-based callback handler on your own domain.
+
+STEP 1: Choose Your Domain
+---------------------------
+You need a domain that you control. Examples:
+- yourdomain.com
+- api.yourdomain.com
+- auth.yourdomain.com
+
+STEP 2: Set Up the Callback Endpoint
+-------------------------------------
+Create an HTTP endpoint at: https://yourdomain.com/line-callback
+
+This endpoint should:
+1. Receive the authorization code from Line
+2. Exchange the code for an access token (using your backend)
+3. Redirect back to your app with the code
+
+Example Node.js/Express implementation:
+```javascript
+app.get('/line-callback', async (req, res) => {
+  const { code, state } = req.query;
+  
+  // Verify state for security
+  // Exchange code for access token
+  // Get user profile
+  
+  // Redirect back to app with code
+  res.redirect(`natively://line-callback?code=${code}&state=${state}`);
+});
+```
+
+STEP 3: Update Line Developer Console
+--------------------------------------
 1. Go to https://developers.line.biz/
-2. Select your channel (Channel ID: 2008377867)
-3. Navigate to OAuth Settings or Basic Settings
-4. Add the callback URL: natively://line-callback
-5. Save the changes
+2. Select your Channel (Channel ID: 2008377867)
+3. Go to "Basic Settings"
+4. Update "Callback URL" to: https://yourdomain.com/line-callback
+5. Save changes
 
-The app will automatically handle callbacks to this URL and process the Line login response.
+STEP 4: Update the App Configuration
+-------------------------------------
+In services/lineAuth.ts, replace:
+  const CALLBACK_URL = 'https://yourdomain.com/line-callback';
 
-For more information, see LINE_LOGIN_SETUP.md
+With your actual domain.
+
+STEP 5: Test the Flow
+---------------------
+1. The app will open Line login in a browser
+2. User logs in with their Line account
+3. Line redirects to your callback endpoint
+4. Your endpoint exchanges the code for a token
+5. Your endpoint redirects back to the app with the code
+6. The app receives the code and checks authorization
+
+SECURITY NOTES:
+---------------
+- Always verify the state parameter to prevent CSRF attacks
+- Never expose your LINE_CHANNEL_SECRET in the app
+- Exchange the authorization code on your backend, not in the app
+- Store tokens securely on your backend
+- Use HTTPS for all callbacks
+
+CURRENT STATUS:
+---------------
+The app is configured to use: https://yourdomain.com/line-callback
+You MUST replace "yourdomain.com" with your actual domain before testing.
+
+TESTING WITHOUT A BACKEND:
+--------------------------
+If you don't have a backend yet, you can:
+1. Use a service like ngrok to expose a local server
+2. Use a serverless function (AWS Lambda, Vercel, etc.)
+3. Use a simple Node.js server on a VPS
+
+Example with ngrok:
+1. Install ngrok: https://ngrok.com/
+2. Run: ngrok http 3000
+3. Get your public URL (e.g., https://abc123.ngrok.io)
+4. Update CALLBACK_URL to: https://abc123.ngrok.io/line-callback
+5. Set up a local Express server to handle the callback

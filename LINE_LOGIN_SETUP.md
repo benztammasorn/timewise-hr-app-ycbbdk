@@ -1,8 +1,16 @@
 
-# Line Login Integration Setup Guide
+# Line Login Integration Setup Guide - HTTP Callback Required
 
-## Overview
-This guide explains how to set up and use the Line login functionality in your TimeWise HR app.
+## ⚠️ IMPORTANT: Line Does Not Accept Deep Links
+
+Line OAuth requires a valid **HTTP/HTTPS URL** for callbacks. Deep links like `natively://line-callback` are **NOT accepted** by Line.
+
+## Solution: Web-Based Callback Handler
+
+You need to set up a backend endpoint that:
+1. Receives the authorization code from Line
+2. Exchanges it for an access token
+3. Redirects back to your app with the Line ID
 
 ## Line Channel Configuration
 
@@ -11,22 +19,102 @@ This guide explains how to set up and use the Line login functionality in your T
 - **Channel Secret**: 7834db6ad03d6459ff7b79aa52d46ec0
 - **API Endpoint**: https://open-api.dataslot.app/search/wfm/v1/JNLVision
 
-## Callback URL
+## Callback URL Setup
 
-The callback URL for your app is:
+### Step 1: Set Up Your Backend Callback Endpoint
+
+You need a web server with an endpoint at: `https://yourdomain.com/line-callback`
+
+**Example Node.js/Express Implementation:**
+
+```javascript
+const express = require('express');
+const axios = require('axios');
+const app = express();
+
+app.get('/line-callback', async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    
+    console.log('Received code:', code);
+    console.log('Received state:', state);
+    
+    // Exchange code for access token
+    const tokenResponse = await axios.post(
+      'https://api.line.me/oauth2/v2.1/token',
+      {
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: 'https://yourdomain.com/line-callback',
+        client_id: '2008377867',
+        client_secret: '7834db6ad03d6459ff7b79aa52d46ec0'
+      }
+    );
+    
+    const accessToken = tokenResponse.data.access_token;
+    
+    // Get user profile
+    const profileResponse = await axios.get(
+      'https://api.line.me/v2/profile',
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+    
+    const lineId = profileResponse.data.userId;
+    
+    // Redirect back to app with the Line ID
+    res.redirect(`natively://line-callback?code=${lineId}&state=${state}`);
+    
+  } catch (error) {
+    console.error('Error in callback:', error);
+    res.status(500).send('Authentication failed');
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Callback server running on port 3000');
+});
 ```
-natively://line-callback
-```
 
-This URL is automatically generated based on your app's scheme configured in `app.json`.
+### Step 2: Deploy Your Backend
 
-### Setting Up in Line Developer Console
+Options:
+- **Vercel** (Recommended for serverless): https://vercel.com/
+- **AWS Lambda**: https://aws.amazon.com/lambda/
+- **Heroku**: https://www.heroku.com/
+- **Your own VPS**: DigitalOcean, Linode, etc.
+- **Local testing with ngrok**: https://ngrok.com/
+
+### Step 3: Update Line Developer Console
 
 1. Go to [Line Developers Console](https://developers.line.biz/)
 2. Select your channel (Channel ID: 2008377867)
-3. Navigate to **Basic Settings** or **OAuth Settings**
-4. Add the callback URL: `natively://line-callback`
-5. Save the changes
+3. Navigate to **Basic Settings**
+4. Find the **Callback URL** field
+5. Enter: `https://yourdomain.com/line-callback`
+6. Save the changes
+
+### Step 4: Update App Configuration
+
+In `services/lineAuth.ts`, update:
+
+```typescript
+const CALLBACK_URL = 'https://yourdomain.com/line-callback'; // Replace with your actual domain
+```
+
+### Step 5: Update app.json
+
+The app.json is already configured with:
+
+```json
+"deepLinks": [
+  "natively://line-callback",
+  "https://yourdomain.com/line-callback"
+]
+```
 
 ## How It Works
 
@@ -35,17 +123,20 @@ This URL is automatically generated based on your app's scheme configured in `ap
 When a user opens the app:
 1. If not logged in, they see the **Login Screen** (`app/login.tsx`)
 2. User taps "Sign in with Line" button
-3. The app opens Line's OAuth login page using `expo-web-browser`
+3. The app opens Line's OAuth login page in a browser using `expo-web-browser`
 4. User authenticates with their Line account
-5. Line redirects back to the app with an authorization code
+5. Line redirects to: `https://yourdomain.com/line-callback?code=...&state=...`
+6. Your backend receives the code and exchanges it for an access token
+7. Your backend gets the user's Line ID from their profile
+8. Your backend redirects to: `natively://line-callback?code=<lineId>&state=...`
+9. The app receives the redirect and extracts the Line ID
 
 ### 2. Authorization Check
 
 After successful Line login:
-1. The app extracts the authorization code from the callback URL
-2. The code is used as the Line ID to check authorization
-3. The app makes a POST request to the DataSlot API endpoint
-4. The API checks if the user exists in the database using the Line ID (ref1 field)
+1. The app extracts the Line ID from the callback URL
+2. The app makes a POST request to the DataSlot API endpoint
+3. The API checks if the user exists in the database using the Line ID (ref1 field)
 
 ### 3. Authorization Response
 
@@ -163,26 +254,46 @@ await logout();
 
 ## Security Considerations
 
-1. **Channel Secret**: The channel secret is currently hardcoded in the service file. For production, consider:
-   - Moving it to environment variables
-   - Using a backend server to handle token exchange
-   - Never expose the secret in client-side code
+⚠️ **IMPORTANT:**
 
-2. **Token Storage**: User info is stored in AsyncStorage, which is not encrypted. For sensitive data:
+1. **Channel Secret**: 
+   - ❌ NEVER expose the channel secret in the app
+   - ✅ Always handle token exchange on your backend
+   - ✅ Keep the secret secure on your server only
+
+2. **State Parameter**:
+   - ✅ Always verify the state parameter to prevent CSRF attacks
+   - ✅ Store state in session/database before redirecting to Line
+   - ✅ Validate state matches when receiving callback
+
+3. **Token Storage**: 
+   - User info is stored in AsyncStorage, which is not encrypted
    - Consider using secure storage solutions
    - Implement token refresh mechanisms
    - Add expiration checks
 
-3. **API Calls**: The authorization check is made directly from the client. For production:
-   - Consider implementing a backend proxy
+4. **API Calls**: 
+   - The authorization check is made directly from the client
+   - Consider implementing a backend proxy for production
    - Add request validation and rate limiting
    - Implement proper error handling and logging
 
+5. **HTTPS Only**:
+   - Always use HTTPS for all callbacks
+   - Never use HTTP in production
+
 ## Troubleshooting
 
-### Issue: "Callback URL not recognized"
-- Ensure the callback URL in Line Developer Console matches: `natively://line-callback`
-- Check that deep linking is properly configured in `app.json`
+### Issue: "Line not accept: natively://line-callback"
+- ✅ Solution: Set up an HTTP/HTTPS callback endpoint as described above
+- Line requires a valid HTTP/HTTPS URL, not a deep link
+
+### Issue: "Callback not being received"
+- Check that your domain is correct in Line Developer Console
+- Verify your backend is running and accessible
+- Check firewall/network settings
+- Use ngrok to test locally
+- Verify the redirect URL in your backend matches the app scheme
 
 ### Issue: "User not authorized"
 - Verify the Line ID exists in the DataSlot database
@@ -200,6 +311,7 @@ await logout();
 - Ensure the app is properly built with deep linking support
 - Test on actual device (not just simulator)
 - Check that the scheme is set to "natively" in app.json
+- Verify your backend is redirecting to the correct deep link format
 
 ## Testing
 

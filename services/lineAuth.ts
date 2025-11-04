@@ -7,16 +7,21 @@ const LINE_CHANNEL_ID = '2008377867';
 const LINE_CHANNEL_SECRET = '7834db6ad03d6459ff7b79aa52d46ec0';
 const API_ENDPOINT = 'https://open-api.dataslot.app/search/wfm/v1/JNLVision';
 
-// Get the callback URL based on the app scheme
-const getCallbackUrl = () => {
+// IMPORTANT: You need to set up a callback URL in your Line Developer Console
+// The callback URL should be an HTTP/HTTPS endpoint that your backend controls
+// For now, we'll use a placeholder - you need to replace this with your actual callback URL
+const CALLBACK_URL = 'https://yourdomain.com/line-callback'; // Replace with your actual callback URL
+
+// Get the deep link URL for handling the callback in the app
+const getDeepLinkUrl = () => {
   const scheme = Linking.createURL('line-callback');
-  console.log('Callback URL:', scheme);
+  console.log('Deep Link URL:', scheme);
   return scheme;
 };
 
-// Generate Line login URL
+// Generate Line login URL with HTTP callback
 export const getLineLoginUrl = () => {
-  const redirectUri = encodeURIComponent(getCallbackUrl());
+  const redirectUri = encodeURIComponent(CALLBACK_URL);
   const state = Math.random().toString(36).substring(7);
   
   // Store state for verification
@@ -24,20 +29,26 @@ export const getLineLoginUrl = () => {
     console.log('Error storing state:', err)
   );
   
-  const loginUrl = `https://web.line.biz/dialog/oauth/weblogin?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${redirectUri}&state=${state}&scope=profile%20openid`;
+  // Use the official Line OAuth endpoint
+  const loginUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${redirectUri}&state=${state}&scope=profile%20openid`;
   
   console.log('Line Login URL:', loginUrl);
   return loginUrl;
 };
 
-// Handle Line login
+// Handle Line login using WebBrowser
 export const handleLineLogin = async () => {
   try {
     const loginUrl = getLineLoginUrl();
+    const deepLinkUrl = getDeepLinkUrl();
+    
+    console.log('Opening Line login in browser...');
+    console.log('Login URL:', loginUrl);
+    console.log('Deep Link URL for callback:', deepLinkUrl);
     
     const result = await WebBrowser.openAuthSessionAsync(
       loginUrl,
-      getCallbackUrl()
+      deepLinkUrl
     );
     
     console.log('WebBrowser result:', result);

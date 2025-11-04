@@ -44,7 +44,8 @@
       "router": {}
     },
     "deepLinks": [
-      "natively://line-callback"
+      "natively://line-callback",
+      "https://yourdomain.com/line-callback"
     ]
   }
 }
