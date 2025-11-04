@@ -6,27 +6,21 @@ import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { handleLineLogin, checkUserAuthorization, storeLineUserInfo, getLineUserInfo } from '@/services/lineAuth';
 import { router } from 'expo-router';
-import * as Linking from 'expo-linking';
-import { useEffect as useEffectHook } from 'react';
 
 export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffectHook(() => {
+  useEffect(() => {
     // Check if user is already logged in
     checkExistingLogin();
-    
-    // Handle deep link callback
-    const subscription = Linking.addEventListener('url', handleDeepLink);
-    return () => subscription.remove();
   }, []);
 
   const checkExistingLogin = async () => {
     try {
       const userInfo = await getLineUserInfo();
       if (userInfo) {
-        console.log('User already logged in:', userInfo);
+        console.log('User already logged in');
         router.replace('/(tabs)/(home)');
       }
     } catch (err) {
@@ -34,27 +28,12 @@ export default function LoginScreen() {
     }
   };
 
-  const handleDeepLink = async (event: { url: string }) => {
-    console.log('Deep link received:', event.url);
-    
-    // Extract code from URL
-    const url = new URL(event.url);
-    const code = url.searchParams.get('code');
-    
-    if (code) {
-      console.log('Authorization code from deep link:', code);
-      // In a real scenario, you would exchange this code for an access token
-      // For now, we'll use the code as a placeholder for the Line ID
-      await performAuthorization(code);
-    }
-  };
-
-  const performAuthorization = async (lineId: string) => {
+  const performAuthorization = async (lineId: string, profile?: any) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      console.log('Performing authorization check...');
+      console.log('Performing authorization check for Line ID:', lineId);
       
       // Check if user is authorized
       const authResult = await checkUserAuthorization(lineId);
@@ -63,7 +42,7 @@ export default function LoginScreen() {
         console.log('User authorized, storing info and navigating...');
         
         // Store user info
-        await storeLineUserInfo(lineId, authResult.data);
+        await storeLineUserInfo(lineId, authResult.data, profile);
         
         // Navigate to home screen
         router.replace('/(tabs)/(home)');
@@ -90,12 +69,14 @@ export default function LoginScreen() {
       setIsLoading(true);
       setError(null);
       
-      console.log('Starting Line login...');
+      console.log('Starting Line OAuth login...');
       const result = await handleLineLogin();
       
-      if (result.success && result.code) {
-        console.log('Login successful, code:', result.code);
-        await performAuthorization(result.code);
+      console.log('Login result:', result.success ? 'Success' : 'Failed');
+      
+      if (result.success && result.userId) {
+        console.log('Login successful, User ID:', result.userId);
+        await performAuthorization(result.userId, result.profile);
       } else {
         const errorMsg = result.error || 'Login failed';
         setError(errorMsg);

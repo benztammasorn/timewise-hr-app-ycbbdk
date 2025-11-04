@@ -1,81 +1,19 @@
 
-# Quick Start: Line Login Integration - HTTP Callback Required
+# Quick Start: Line OAuth Login - React Native
 
-## ⚠️ IMPORTANT: Line Does Not Accept Deep Links
+## ✅ GOOD NEWS: No Backend Required!
 
-Line OAuth requires a valid **HTTP/HTTPS URL** for callbacks. You must set up a backend endpoint.
+Your TimeWise HR app now has **Line OAuth 2.0** integrated directly in React Native! The app handles the entire OAuth flow without needing a backend callback endpoint.
 
 ## 🚀 What's New
 
-Your TimeWise HR app now has **Line login** integrated! Users must authenticate with their Line account to access the app.
-
-## 📋 Callback URL Setup
-
-You need to set up a backend endpoint at: `https://yourdomain.com/line-callback`
-
-### Steps to Configure:
-
-1. **Set up backend endpoint** (see below)
-2. Go to [Line Developers Console](https://developers.line.biz/)
-3. Select Channel ID: 2008377867
-4. Go to **Basic Settings**
-5. Add Callback URL: `https://yourdomain.com/line-callback`
-6. Save
-
-### Backend Endpoint Example (Node.js/Express):
-
-```javascript
-const express = require('express');
-const axios = require('axios');
-const app = express();
-
-app.get('/line-callback', async (req, res) => {
-  try {
-    const { code, state } = req.query;
-    
-    // Exchange code for access token
-    const tokenResponse = await axios.post(
-      'https://api.line.me/oauth2/v2.1/token',
-      {
-        grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: 'https://yourdomain.com/line-callback',
-        client_id: '2008377867',
-        client_secret: '7834db6ad03d6459ff7b79aa52d46ec0'
-      }
-    );
-    
-    const accessToken = tokenResponse.data.access_token;
-    
-    // Get user profile
-    const profileResponse = await axios.get(
-      'https://api.line.me/v2/profile',
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      }
-    );
-    
-    const lineId = profileResponse.data.userId;
-    
-    // Redirect back to app
-    res.redirect(`natively://line-callback?code=${lineId}&state=${state}`);
-    
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('Authentication failed');
-  }
-});
-
-app.listen(3000);
-```
-
-### Deploy Options:
-- **Vercel** (Recommended): https://vercel.com/
-- **AWS Lambda**: https://aws.amazon.com/lambda/
-- **Heroku**: https://www.heroku.com/
-- **Local with ngrok**: https://ngrok.com/
+Your app now supports:
+- ✓ Line OAuth 2.0 authorization code flow
+- ✓ Secure token exchange (code → access token)
+- ✓ User profile retrieval (Line ID)
+- ✓ Authorization check against your API
+- ✓ Persistent login using AsyncStorage
+- ✓ CSRF protection with state parameter
 
 ## 🔄 How It Works
 
@@ -91,38 +29,52 @@ app.listen(3000);
    ↓
 5. User authenticates with Line account
    ↓
-6. Line redirects to: https://yourdomain.com/line-callback?code=...
+6. Line redirects to: natively://line-callback?code=...&state=...
    ↓
-7. Backend exchanges code for access token
+7. App receives redirect (handled by expo-web-browser)
    ↓
-8. Backend gets user's Line ID
+8. App extracts authorization code
    ↓
-9. Backend redirects to: natively://line-callback?code=<lineId>
+9. App exchanges code for access token (via Line API)
    ↓
-10. App receives Line ID and checks authorization
+10. App retrieves user profile (Line ID)
     ↓
-11. If authorized → Access app
+11. App checks authorization against your API
+    ↓
+12. If authorized → Access app
     If not authorized → See error message
 ```
 
+## ⚙️ Configuration
+
+### NO SETUP REQUIRED!
+
+The app is already configured with:
+- ✓ Channel ID: 2008377867
+- ✓ Channel Secret: 7834db6ad03d6459ff7b79aa52d46ec0
+- ✓ Deep link scheme: natively://line-callback
+- ✓ OAuth endpoints configured
+
+**Just test it!** No backend setup needed.
+
 ## 📁 Files Changed
 
-### New Files:
-- `services/lineAuth.ts` - Authentication logic
+### Updated Files:
+- `services/lineAuth.ts` - Complete OAuth 2.0 implementation
 - `app/login.tsx` - Login screen UI
-
-### Modified Files:
-- `app.json` - Added deep linking
-- `app/_layout.tsx` - Added login state management
-- `app/(tabs)/profile.tsx` - Added logout button
+- `app.json` - Deep linking configuration
+- `app/_layout.tsx` - Login state management
 
 ## 🧪 Testing
 
 ### Test 1: Login
-1. Open app
+1. Open app on iOS or Android device
 2. Tap "Sign in with Line"
-3. Complete Line authentication
-4. Should see main app (if authorized)
+3. Browser opens with Line login page
+4. Log in with your Line account
+5. You'll be redirected back to the app
+6. If your Line ID is in the database → Access app
+7. If not → See "No authorization" error
 
 ### Test 2: Logout
 1. Go to Profile tab
@@ -132,112 +84,129 @@ app.listen(3000);
 ### Test 3: Persistent Login
 1. Login successfully
 2. Close and reopen app
-3. Should skip login screen
+3. Should skip login screen and go directly to home
+
+### Test 4: Check Console Logs
+Open the console to see the OAuth flow:
+- "Opening Line login..." - Login started
+- "Callback URL:" - Received redirect from Line
+- "Authorization code received:" - Code extracted
+- "Token exchange successful" - Got access token
+- "User profile fetched successfully" - Got Line ID
+- "Checking authorization for Line ID:" - Checking database
+- "User authorized" or "User not authorized" - Final result
 
 ## 🔑 Key Functions
 
 ```typescript
 // In services/lineAuth.ts
 
-// Start login
-await handleLineLogin();
+// Start OAuth login
+const result = await handleLineLogin();
+// Returns: { success, userId, accessToken, profile }
 
 // Check authorization
-await checkUserAuthorization(lineId);
+const authResult = await checkUserAuthorization(lineId);
+// Returns: { authorized, data }
 
 // Store user info
-await storeLineUserInfo(lineId, userInfo);
+await storeLineUserInfo(lineId, userInfo, profile);
 
 // Get user info
-await getLineUserInfo();
+const userInfo = await getLineUserInfo();
 
 // Logout
 await logout();
 ```
 
-## ⚙️ Configuration
+## 📋 Line Channel Details
 
-### Step 1: Update App Configuration
-
-In `services/lineAuth.ts`, update:
-
-```typescript
-const CALLBACK_URL = 'https://yourdomain.com/line-callback'; // Your actual domain
-```
-
-### Line Channel Details:
 - **Channel ID**: 2008377867
-- **Channel Secret**: 7834db6ad03d6459ff7b79aa52d46ec0 (Keep this secret!)
+- **Channel Secret**: 7834db6ad03d6459ff7b79aa52d46ec0
+- **Deep Link Scheme**: natively://line-callback
 - **API Endpoint**: https://open-api.dataslot.app/search/wfm/v1/JNLVision
 
-### Authorization Check:
+## 🔐 Authorization Check
+
 The app checks if user exists in database using:
-- Company: JNLVision
-- Workflow: HR_EMPLOYEE
-- Type: TASK
-- ref1: Line ID
+- **Company**: JNLVision
+- **Workflow**: HR_EMPLOYEE
+- **Type**: TASK
+- **ref1**: Line ID (must match)
+
+**Important**: Your Line ID must be in the database (ref1 field) to login!
 
 ## 🐛 Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| "Line not accept: natively://line-callback" | Set up HTTP/HTTPS backend endpoint (see above) |
-| Callback not being received | Verify backend is running and accessible |
-| User not authorized | Check Line ID exists in database (ref1 field) |
+| Login button doesn't work | Check internet connection |
+| Browser doesn't open | Make sure you're on iOS/Android (not web) |
+| Callback not received | Check console logs for errors |
+| "User not authorized" error | Verify your Line ID is in database (ref1 field) |
 | Deep link not working | Test on actual device, not simulator |
-| Login button not working | Check internet connection |
-| Backend not redirecting | Verify redirect URL format: `natively://line-callback?code=...` |
+| Token exchange fails | Check internet connection and Line API status |
+| Can't see console logs | Use `expo start` and check terminal output |
 
-## 📚 Documentation
+## 📚 How to Debug
 
-For detailed information:
-- `LINE_LOGIN_SETUP.md` - Complete setup guide
-- `LINE_LOGIN_IMPLEMENTATION_SUMMARY.md` - Implementation details
-- `CALLBACK_URL_INFO.txt` - Quick reference
+1. **Check Console Logs**:
+   ```bash
+   expo start
+   # Watch the terminal for logs
+   ```
+
+2. **Common Log Messages**:
+   - ✓ "Opening Line login..." - Good, login started
+   - ✓ "Token exchange successful" - Good, got access token
+   - ✓ "User profile fetched successfully" - Good, got Line ID
+   - ✓ "User authorized" - Good, logged in!
+   - ✗ "User not authorized" - Line ID not in database
+   - ✗ "Token exchange failed" - Check internet connection
+
+3. **Check Your Database**:
+   - Make sure your Line ID is in the database
+   - Check the ref1 field matches your Line ID
+   - Verify company is "JNLVision"
 
 ## ✅ Checklist
 
-- [ ] Set up backend callback endpoint
-- [ ] Deploy backend to your domain
-- [ ] Update `services/lineAuth.ts` with your domain
-- [ ] Add callback URL to Line Developer Console
 - [ ] Test login with your Line account
-- [ ] Verify user is in database
+- [ ] Verify your Line ID is in the database
+- [ ] Check console logs for any errors
 - [ ] Test logout functionality
 - [ ] Test persistent login (close and reopen app)
 - [ ] Test on both iOS and Android
+- [ ] Verify authorization check works
 
 ## 🎯 Next Steps
 
-1. **Set up backend** - Create callback endpoint
-2. **Deploy backend** - Use Vercel, AWS Lambda, or your own server
-3. **Update app config** - Set CALLBACK_URL in services/lineAuth.ts
-4. **Configure Line Console** - Add callback URL
-5. **Test the login** - Try logging in with your Line account
-6. **Verify database** - Make sure your Line ID is in the system
-7. **Deploy** - Build and release the app
+1. **Test the login** - Try logging in with your Line account
+2. **Check database** - Make sure your Line ID is in the system (ref1 field)
+3. **Review logs** - Check console for any errors
+4. **Test all features** - Login, logout, persistent login
+5. **Deploy** - Build and release the app
 
 ## 💡 Tips
 
 - Users must have their Line ID in the database (ref1 field) to login
 - The app stores login state locally, so users stay logged in
 - Users can logout from the Profile tab
-- Never expose your LINE_CHANNEL_SECRET in the app
-- Always use HTTPS for production callbacks
-- Test with ngrok locally before deploying
+- The OAuth flow is secure with CSRF protection (state parameter)
+- Access tokens are not stored (only user info)
+- Deep link callback is secure (uses natively:// scheme)
 
 ## 🆘 Need Help?
 
 1. Check the console logs for error messages
-2. Verify backend is running and accessible
-3. Verify callback URL is correct in Line Console
-4. Ensure Line ID exists in database
-5. Check internet connection
-6. Try on actual device (not simulator)
-7. Review LINE_LOGIN_SETUP.md for detailed setup
+2. Verify your Line ID is in the database
+3. Make sure you're testing on iOS or Android (not web)
+4. Check internet connection
+5. Try on actual device (not simulator)
+6. Review the console logs for specific error messages
 
 ---
 
-**Your app now has Line login integration!** 🎉
+**Your app now has Line OAuth login!** 🎉
 
-**Next: Set up your backend callback endpoint and deploy it to your domain.**
+**Just test it - no backend setup required!**

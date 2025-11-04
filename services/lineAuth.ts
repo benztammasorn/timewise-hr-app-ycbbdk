@@ -2,71 +2,93 @@
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { makeRedirectUri } from 'expo-auth-session';
+import { Platform } from 'react-native';
 
 const LINE_CHANNEL_ID = '2008377867';
 const LINE_CHANNEL_SECRET = '7834db6ad03d6459ff7b79aa52d46ec0';
 const API_ENDPOINT = 'https://open-api.dataslot.app/search/wfm/v1/JNLVision';
 
-// IMPORTANT: You need to set up a callback URL in your Line Developer Console
-// The callback URL should be an HTTP/HTTPS endpoint that your backend controls
-// For now, we'll use a placeholder - you need to replace this with your actual callback URL
-const CALLBACK_URL = 'https://yourdomain.com/line-callback'; // Replace with your actual callback URL
+// Line OAuth endpoints
+const LINE_AUTH_ENDPOINT = 'https://access.line.me/oauth2/v2.1/authorize';
+const LINE_TOKEN_ENDPOINT = 'https://api.line.me/oauth2/v2.1/token';
+const LINE_PROFILE_ENDPOINT = 'https://api.line.me/v2/profile';
 
-// Get the deep link URL for handling the callback in the app
-const getDeepLinkUrl = () => {
-  const scheme = Linking.createURL('line-callback');
-  console.log('Deep Link URL:', scheme);
-  return scheme;
+// Generate redirect URI using expo-auth-session
+const getRedirectUri = () => {
+  const redirectUri = makeRedirectUri({
+    scheme: 'natively',
+    path: 'line-callback',
+  });
+  console.log('Redirect URI:', redirectUri);
+  return redirectUri;
 };
 
-// Generate Line login URL with HTTP callback
-export const getLineLoginUrl = () => {
-  const redirectUri = encodeURIComponent(CALLBACK_URL);
-  const state = Math.random().toString(36).substring(7);
-  
-  // Store state for verification
-  AsyncStorage.setItem('lineLoginState', state).catch(err => 
-    console.log('Error storing state:', err)
-  );
-  
-  // Use the official Line OAuth endpoint
-  const loginUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${redirectUri}&state=${state}&scope=profile%20openid`;
-  
-  console.log('Line Login URL:', loginUrl);
-  return loginUrl;
+// Generate a random state for CSRF protection
+const generateState = () => {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 };
 
-// Handle Line login using WebBrowser
+// Handle Line login using expo-auth-session pattern
 export const handleLineLogin = async () => {
   try {
-    const loginUrl = getLineLoginUrl();
-    const deepLinkUrl = getDeepLinkUrl();
+    const redirectUri = getRedirectUri();
+    const state = generateState();
     
-    console.log('Opening Line login in browser...');
-    console.log('Login URL:', loginUrl);
-    console.log('Deep Link URL for callback:', deepLinkUrl);
+    // Store state for verification
+    await AsyncStorage.setItem('lineLoginState', state);
     
-    const result = await WebBrowser.openAuthSessionAsync(
-      loginUrl,
-      deepLinkUrl
-    );
+    // Build the authorization URL
+    const authUrl = `${LINE_AUTH_ENDPOINT}?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=profile%20openid`;
     
-    console.log('WebBrowser result:', result);
+    console.log('Opening Line login...');
+    console.log('Auth URL:', authUrl);
+    
+    // Open the browser for authentication
+    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+    
+    console.log('WebBrowser result type:', result.type);
     
     if (result.type === 'success') {
       const url = result.url;
-      console.log('Callback URL received:', url);
+      console.log('Callback URL:', url);
       
-      // Extract authorization code from URL
+      // Parse the callback URL
       const urlParams = new URL(url);
       const code = urlParams.searchParams.get('code');
-      const state = urlParams.searchParams.get('state');
+      const returnedState = urlParams.searchParams.get('state');
       
-      console.log('Authorization code:', code);
-      console.log('State:', state);
+      console.log('Authorization code received:', !!code);
+      console.log('State match:', state === returnedState);
+      
+      // Verify state matches
+      const storedState = await AsyncStorage.getItem('lineLoginState');
+      if (returnedState !== storedState) {
+        console.log('State mismatch - possible CSRF attack');
+        return { success: false, error: 'State verification failed' };
+      }
       
       if (code) {
-        return { success: true, code, state };
+        // Exchange code for access token
+        const tokenResult = await exchangeCodeForToken(code, redirectUri);
+        if (tokenResult.success && tokenResult.accessToken) {
+          // Get user profile
+          const profileResult = await getLineUserProfile(tokenResult.accessToken);
+          if (profileResult.success && profileResult.userId) {
+            return { 
+              success: true, 
+              userId: profileResult.userId,
+              accessToken: tokenResult.accessToken,
+              profile: profileResult.profile
+            };
+          } else {
+            return { success: false, error: 'Failed to get user profile' };
+          }
+        } else {
+          return { success: false, error: tokenResult.error || 'Failed to exchange code for token' };
+        }
+      } else {
+        return { success: false, error: 'No authorization code received' };
       }
     } else if (result.type === 'cancel') {
       console.log('User cancelled Line login');
@@ -79,6 +101,89 @@ export const handleLineLogin = async () => {
     return { success: false, error: 'Unknown error' };
   } catch (error) {
     console.log('Error during Line login:', error);
+    return { success: false, error: String(error) };
+  }
+};
+
+// Exchange authorization code for access token
+const exchangeCodeForToken = async (code: string, redirectUri: string) => {
+  try {
+    console.log('Exchanging code for token...');
+    
+    const response = await fetch(LINE_TOKEN_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+        client_id: LINE_CHANNEL_ID,
+        client_secret: LINE_CHANNEL_SECRET,
+      }).toString(),
+    });
+    
+    console.log('Token exchange response status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.log('Token exchange error:', errorData);
+      return { success: false, error: `Token exchange failed: ${response.status}` };
+    }
+    
+    const data = await response.json();
+    console.log('Token exchange successful');
+    
+    return { 
+      success: true, 
+      accessToken: data.access_token,
+      idToken: data.id_token,
+      tokenType: data.token_type,
+      expiresIn: data.expires_in,
+    };
+  } catch (error) {
+    console.log('Error exchanging code for token:', error);
+    return { success: false, error: String(error) };
+  }
+};
+
+// Get Line user profile
+const getLineUserProfile = async (accessToken: string) => {
+  try {
+    console.log('Fetching Line user profile...');
+    
+    const response = await fetch(LINE_PROFILE_ENDPOINT, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+    
+    console.log('Profile fetch response status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.log('Profile fetch error:', errorData);
+      return { success: false, error: `Profile fetch failed: ${response.status}` };
+    }
+    
+    const profile = await response.json();
+    console.log('User profile fetched successfully');
+    console.log('User ID:', profile.userId);
+    
+    return { 
+      success: true, 
+      userId: profile.userId,
+      profile: {
+        userId: profile.userId,
+        displayName: profile.displayName,
+        pictureUrl: profile.pictureUrl,
+        statusMessage: profile.statusMessage,
+      }
+    };
+  } catch (error) {
+    console.log('Error fetching user profile:', error);
     return { success: false, error: String(error) };
   }
 };
@@ -100,7 +205,7 @@ export const checkUserAuthorization = async (lineId: string) => {
       sort: ['timestamp:desc']
     };
     
-    console.log('API Request:', JSON.stringify(requestBody, null, 2));
+    console.log('API Request body:', JSON.stringify(requestBody, null, 2));
     
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
@@ -135,11 +240,12 @@ export const checkUserAuthorization = async (lineId: string) => {
 };
 
 // Store Line user info
-export const storeLineUserInfo = async (lineId: string, userInfo: any) => {
+export const storeLineUserInfo = async (lineId: string, userInfo: any, profile?: any) => {
   try {
     const userData = {
       lineId,
       userInfo,
+      profile,
       loginTime: new Date().toISOString(),
     };
     await AsyncStorage.setItem('lineUserInfo', JSON.stringify(userData));

@@ -25,7 +25,7 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.Dataslot.WFMHR"
+      "package": "com.dataslot.hr"
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -44,8 +44,7 @@
       "router": {}
     },
     "deepLinks": [
-      "natively://line-callback",
-      "https://yourdomain.com/line-callback"
+      "natively://line-callback"
     ]
   }
 }
